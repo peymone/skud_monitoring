@@ -1,4 +1,4 @@
-from os import popen
+from os import popen  # use for run cmd command
 
 
 class ServersChecker:
@@ -8,8 +8,8 @@ class ServersChecker:
         self.__servers = dict()
         self.__ping_result = dict()
         self.__ping_errors = [
-            'unreachable',
-            'Request time out',
+            'Destination host unreachable',
+            'Request timed out',
             'Ping request could not find host',
             'При проверке связи не удалось обнаружить узел',
             'Превышен интервал ожидания для запроса']
@@ -24,8 +24,9 @@ class ServersChecker:
         """Ping all servers and check for errors"""
 
         # Iterate over server dict and run cmd ping command
-        for server, desc in self.__servers.items():
-            ping_res = popen(f"ping {server}").read()
+        for server, description in self.__servers.items():
+            ping_res = popen('ping ' + server).read()  # ping server
+            ping_res = ping_res.encode('cp1251').decode('cp866')  # Russian cmd
             error_ocured = False
 
             # Iterate over well known ping errors and check if they ocured in ping res
@@ -36,9 +37,9 @@ class ServersChecker:
 
             # Fill dictionary with result tuple
             if error_ocured:
-                self.__ping_result[server] = 'down', desc
+                self.__ping_result[server] = 'down', description
             else:
-                self.__ping_result[server] = 'up', desc
+                self.__ping_result[server] = 'up', description
 
         return self.__ping_result
 
