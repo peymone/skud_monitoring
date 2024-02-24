@@ -80,12 +80,12 @@ class Monitor:
 
                     if status[0] == 'down':  # Check if one of API's is down
                         rich.show(
-                            f"{api.ljust(45)}{status[0].ljust(30)}{status[1]}", lvl='critical')
+                            f"{api.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='critical')
                         logger.log.critical(
                             f"{api} is down - http status check ({status[1]})")
                     else:
                         rich.show(
-                            f"{api.ljust(45)}{status[0].ljust(30)}{status[1]}", lvl='info')
+                            f"{api.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='info')
                         logger.log.info(
                             f"{api} is up - http status check ({status[1]})")
 
