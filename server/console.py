@@ -1,5 +1,6 @@
 from threading import Thread
 
+# Import application modules
 from monitor import monitor
 from pretifier import rich
 from logger import logger

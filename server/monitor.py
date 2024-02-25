@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread, Event
 
+# Import application modules
 from servers_check.checker import servers_checker
 from api_check.checker import api_checker
 from pretifier import rich

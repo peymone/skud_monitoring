@@ -36,7 +36,8 @@ class ServersChecker:
                 elif loss_count == 100:  # 100% package loss
                     self.__ping_result[server] = 'down', description
                 else:  # 1 - 99% package loss
-                    self.__ping_result[server] = f'up (package loss {loss_count}%)', description
+                    self.__ping_result[server] = f'up (package loss {
+                        loss_count}%)', description
 
             # No match object in ping result - None
             else:

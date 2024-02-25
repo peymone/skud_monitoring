@@ -33,9 +33,11 @@ class APIChecker:
 
                     # Fill dictionary with result tuple
                     if response.status == 200:
-                        self.__api_status[desc] = 'up', f"response time is {open_time} sec"
+                        self.__api_status[desc] = 'up', f"response time is {
+                            open_time} sec"
                     else:
-                        self.__api_status[desc] = 'down', f"response time is {open_time} sec"
+                        self.__api_status[desc] = 'down', f"response time is {
+                            open_time} sec"
 
             # Error handlers
             except HTTPError as error:
