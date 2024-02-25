@@ -97,7 +97,7 @@ class Monitor:
                 logger.log.debug("Progress bar thread has been started")
                 progressBar_thread.start()  # Start progress bar thread
 
-                # Wait for delay or event (when change delay) - prevent thread lock
+                # Wait for delay pass or event - loop can stop immediately
                 self.__event.wait(self.__delay)
 
                 progressBar_thread.join()  # Wait until progress bar end
@@ -112,6 +112,7 @@ class Monitor:
 
         if self.__isActive is True:
             self.__isActive = False
+            self.__event.set()  # Set event to True - start loop can stop immediately
             rich.show("System monitoring has been stopped")
             logger.log.debug("System monitoring has been stopped")
         else:
@@ -150,7 +151,7 @@ class Monitor:
 
         if self.__isActive:
             self.__delay = delay * 60  # Conver minutes to seconds
-            self.__event.set()  # Set event to True - prevent thread lock
+            self.__event.set()  # Set event to True - start loop can stop immediately
 
             rich.show(f"Monitor delay has been changed to {delay} minutes")
             logger.log.debug(
