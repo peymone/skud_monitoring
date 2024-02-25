@@ -60,11 +60,16 @@ class Monitor:
 
                     if status[0] == 'down':  # Check if one of servers is down
                         rich.show(
-                            f"{server.ljust(45)}{status[0].ljust(30)}{status[1]}", lvl='error')
+                            f"{server.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='error')
                         logger.log.error(f"{server} is down - ping check")
+                    elif 'up (package loss' in status[0]:  # Loss 1 - 99%
+                        rich.show(
+                            f"{server.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='warning')
+                        logger.log.warning(
+                            f"{server} is {status[0]} - ping check")
                     else:
                         rich.show(
-                            f"{server.ljust(45)}{status[0].ljust(30)}{status[1]}", lvl='info')
+                            f"{server.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='info')
                         logger.log.info(f"{server} is up - ping check")
 
                 print('\n')
@@ -75,12 +80,12 @@ class Monitor:
 
                     if status[0] == 'down':  # Check if one of API's is down
                         rich.show(
-                            f"{api.ljust(45)}{status[0].ljust(30)}{status[1]}", lvl='critical')
+                            f"{api.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='critical')
                         logger.log.critical(
                             f"{api} is down - http status check ({status[1]})")
                     else:
                         rich.show(
-                            f"{api.ljust(45)}{status[0].ljust(30)}{status[1]}", lvl='info')
+                            f"{api.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='info')
                         logger.log.info(
                             f"{api} is up - http status check ({status[1]})")
 
