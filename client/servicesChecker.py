@@ -11,16 +11,16 @@ class ServicesChecker:
     def __init__(self) -> None:
         self.__LyrixLogs_path = Path('C:\LyriX54\logs')
         self.__OstelLogs_path = Path('C:\OstelApps\services\log')
-        self.__lastLogTime_pattern = '^(\d{4}-[\d]+\s[\d:]+)'
+        self.__lastLogTime_pattern = '\d{4}-[\d-]+\s[\d:]+'
         self.__pid_pattern = 'PID\s\d+'
         self.__logTime_format = '%Y-%m-%d %H:%M:%S'
 
         # List with Lyrix service names on specific server
-        self.lyrix_services: list = [re.search(r'\w+', log.stem).group()
-                                     for log in self.__LyrixLogs_path.iterdir()]
+        self.lyrix_services: list[str] = [re.search(r'\w+', log.stem).group()
+                                          for log in self.__LyrixLogs_path.iterdir()]
 
         # Remove dublicates from secrvices list
-        self.lyrix_services: set = set(self.lyrix_services)
+        self.lyrix_services: set[str] = set(self.lyrix_services)
 
         # Remove unnecessary files from services list
         if 'kernelDiag' in self.lyrix_services:
@@ -36,9 +36,9 @@ class ServicesChecker:
         # Opens log with 'cp866' encoding for Russian symbols support
         with open(log_path, mode='r', encoding='cp866') as log:
             for line in log:  # Check for last log time, rewrite until last occurrence
-                log_timeMatch = re.search(self.__lastLogTime_pattern, line)
+                log_timeMatch = re.match(self.__lastLogTime_pattern, line)
                 if log_timeMatch is not None:
-                    last_logTime: str = log_timeMatch.group()
+                    last_logTime = log_timeMatch.group()
 
             # Convert last log time string in file to datetime object
             last_logTime: datetime = datetime.strptime(
@@ -77,9 +77,8 @@ class ServicesChecker:
 
                 # Check last modificated log and get last log time
                 if logs_pathsList.index(log_path) == 0:
-                    last_logTime: datetime = self.__get_lastLogTime(log_path)
-                    last_logTime: str = last_logTime.strftime(
-                        self.__logTime_format)
+                    last_logTime = self.__get_lastLogTime(log_path)
+                    last_logTime = last_logTime.strftime(self.__logTime_format)
 
                 # Open log and check for PID, example: PID 13813
                 with open(log_path, mode='r') as log:
