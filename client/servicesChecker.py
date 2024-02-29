@@ -11,15 +11,16 @@ class ServicesChecker:
     def __init__(self) -> None:
         self.__LyrixLogs_path = Path('C:\LyriX54\logs')
         self.__OstelLogs_path = Path('C:\OstelApps\services\log')
+        self.__lastLogTime_pattern = '^(\d{4}-[\d]+\s[\d:]+)'
         self.__pid_pattern = 'PID\s\d+'
-        self._log_timeFormat = '%Y-%m-%d %H:%M:%S'
+        self.__logTime_format = '%Y-%m-%d %H:%M:%S'
 
         # List with Lyrix service names on specific server
-        self.lyrix_services: str = [re.search(r'\w+', log.stem)
-                                    for log in self.__LyrixLogs_path.iterdir()]
+        self.lyrix_services: list = [re.search(r'\w+', log.stem).group()
+                                     for log in self.__LyrixLogs_path.iterdir()]
 
         # Remove dublicates from secrvices list
-        self.lyrix_services: str = set(self.lyrix_services)
+        self.lyrix_services: set = set(self.lyrix_services)
 
         # Remove unnecessary files from services list
         if 'kernelDiag' in self.lyrix_services:
@@ -35,13 +36,13 @@ class ServicesChecker:
         # Opens log with 'cp866' encoding for Russian symbols support
         with open(log_path, mode='r', encoding='cp866') as log:
             for line in log:  # Check for last log time, rewrite until last occurrence
-                log_timeMatch = re.search(self._log_timeFormat, line)
+                log_timeMatch = re.search(self.__lastLogTime_pattern, line)
                 if log_timeMatch is not None:
                     last_logTime: str = log_timeMatch.group()
 
             # Convert last log time string in file to datetime object
             last_logTime: datetime = datetime.strptime(
-                last_logTime, self._log_timeFormat)
+                last_logTime, self.__logTime_format)
 
             return last_logTime
 
@@ -77,7 +78,8 @@ class ServicesChecker:
                 # Check last modificated log and get last log time
                 if logs_pathsList.index(log_path) == 0:
                     last_logTime: datetime = self.__get_lastLogTime(log_path)
-                    last_logTime: str = datetime.strftime(self._log_timeFormat)
+                    last_logTime: str = last_logTime.strftime(
+                        self.__logTime_format)
 
                 # Open log and check for PID, example: PID 13813
                 with open(log_path, mode='r') as log:
@@ -116,14 +118,14 @@ class ServicesChecker:
 
             # Generate current ostel service log paths in directory - they can change by time
             ostel_logs = {
-                log_path.stem: log_path for log_path in self.__OstelLogs_path.iterdir() if log_path == '.log'}
+                log_path.stem: log_path for log_path in self.__OstelLogs_path.iterdir() if log_path.suffix == '.log'}
 
             for service_name, log_path in ostel_logs.items():
                 last_logTime = self.__get_lastLogTime(log_path)
-                last_logTime_str = last_logTime.strftime(self._log_timeFormat)
+                last_logTime_str = last_logTime.strftime(self.__logTime_format)
 
                 # Check if last log was less than 30 minutes ago
-                if datetime.now() < (last_logTime - timedelta_30m):
+                if datetime.now() < (last_logTime + timedelta_30m):
                     ostelServices_status[service_name] = 'Up', last_logTime_str
                 else:
                     ostelServices_status[service_name] = 'Warning', last_logTime_str
