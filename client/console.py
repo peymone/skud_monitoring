@@ -9,8 +9,9 @@ class Console:
         self.__commands = {
             'commands': "Show all available commands",
             'exit': "Close console",
+            'start': "Start client",
             'stop': "Stop client",
-            'status': "Show current client status - for test",
+            'status': "Show current services status - for test",
         }
 
     def show_commands(self) -> None:
@@ -31,6 +32,7 @@ class Console:
                 # Execute command
                 match self.__command:
                     case 'commands': self.show_commands()
+                    case 'start': pass
                     case 'stop': pass
                     case 'status':
                         services_statuses = model.get_servicesStatuses()
