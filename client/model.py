@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 
 from servicesChecker import services_checker
-from .client import client
+from client import client
 
 
 class Model:

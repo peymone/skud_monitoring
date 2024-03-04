@@ -9,8 +9,10 @@ class ServicesChecker:
     """Check service statuses, both lyrix and ostel"""
 
     def __init__(self) -> None:
-        self.__LyrixLogs_path = Path('C:\LyriX54\logs')
-        self.__OstelLogs_path = Path('C:\OstelApps\services\log')
+        self.__LyrixLogs_path = Path(
+            r'C:\Users\from_\Downloads\test_logs\LyrixLogs')
+        self.__OstelLogs_path = Path(
+            r'C:\Users\from_\Downloads\test_logs\OstelLogs')
         self.__lastLogTime_pattern = '\d{4}-[\d-]+\s[\d:]+'
         self.__pid_pattern = 'PID\s\d+'
         self.__logTime_format = '%Y-%m-%d %H:%M:%S'

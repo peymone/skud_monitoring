@@ -13,6 +13,10 @@ class Client:
         self.__client_status = False
 
     def start(self, server_hostName, server_portNumber):
+        if self.client_socket is True:
+            print("Client already running")
+            return
+
         self.__server_hostName = server_hostName
         self.__server_portNumber = server_portNumber
         self.__client_status = True
@@ -34,7 +38,8 @@ class Client:
 
             # Rise this if the server is not working at the moment. Try againg after 60 seconds
             except ConnectionRefusedError:
-                print(f"\nServer on {self.__server_hostName}:{self.__server_portNumber} is not working at the moment. Client will try reconnect after 60 seconds\n")
+                print(
+                    f"\nServer on {self.__server_hostName}:{self.__server_portNumber} is not working at the moment. Client will try reconnect after 60 seconds\n")
                 sleep(60)
 
     def stop(self):
@@ -51,13 +56,14 @@ class Client:
     def __send(self, message):
         """Send messages to the server"""
 
-        if self.__client_status if False:
+        if self.__client_status is False:
             print("\nClient is not working at the moment\n")
         else:
             try:
                 self.client_socket.send(message.encode('utf-8'))
             except BrokenPipeError:
-                print(f"\nServer on {self.__server_hostName}:{self.__server_portNumber} is not working at the moment\n")
+                print(
+                    f"\nServer on {self.__server_hostName}:{self.__server_portNumber} is not working at the moment\n")
 
     def __recieve_messages_fromServer(self):
         try:
