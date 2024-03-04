@@ -37,7 +37,7 @@ class Client:
                 print(f"\nServer on {self.__server_hostName}:{self.__server_portNumber} is not working at the moment. Client will try reconnect after 60 seconds\n")
                 sleep(60)
 
-    def __stop(self):
+    def stop(self):
         """Close connection by client"""
 
         if self.__client_status is False:
