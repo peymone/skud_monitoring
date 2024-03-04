@@ -30,7 +30,7 @@ class Model:
     def start_client(self, server_hostName, server_portNumber):
         client_thread = Thread(client.start, args=(
             server_hostName, server_portNumber))
-        client.start()
+        client_thread.start()
 
     def stop_client(self):
         client.stop()
