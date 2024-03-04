@@ -15,8 +15,9 @@ class Client:
     def start(self, server_hostName, server_portNumber):
         self.__server_hostName = server_hostName
         self.__server_portNumber = server_portNumber
+        self.__client_status = True
 
-        while True:
+        while self.__client_status is True:
             try:  # Try to connect the server until it response
                 self.client_socket = socket.socket(
                     socket.AF_INET, socket.SOCK_STREAM)
@@ -35,6 +36,17 @@ class Client:
             except ConnectionRefusedError:
                 sleep(60)
 
+    def __stop(self):
+        """Close connection by client"""
+
+        if self.__client_status is False:
+            print("\nClient is not working at the moment\n")
+        else:
+            self.client_socket.close()
+            self.__client_status = False
+            print(
+                f"\nConnection to {self.__server_hostName}:{self.__server_portNumber} is closed by client\n")
+
     def __recieve_messages_fromServer(self):
         try:
             while self.__client_status is True:
@@ -47,7 +59,7 @@ class Client:
             self.client_socket.close()
             self.__client_status = False
             print(
-                f"\nConnection to {self.__server_hostName}:{self.__server_portNumber} is closed\n")
+                f"\nConnection to {self.__server_hostName}:{self.__server_portNumber} is closed by server\n")
 
         # Connection closed by client
         except ConnectionAbortedError:
