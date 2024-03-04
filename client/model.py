@@ -1,6 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
+from threading import Thread
 
 from servicesChecker import services_checker
+from .client import client
 
 
 class Model:
@@ -24,6 +26,14 @@ class Model:
             ostelServices_status = ostelChecker_thread.result()
 
         return lyrixServices_status, ostelServices_status
+
+    def start_client(self, server_hostName, server_portNumber):
+        client_thread = Thread(client.start, args=(
+            server_hostName, server_portNumber))
+        client_thread.start()
+
+    def stop_client(self):
+        client.stop()
 
 
 model = Model()
