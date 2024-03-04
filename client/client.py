@@ -64,7 +64,8 @@ class Client:
             while self.__client_status is True:
                 message = self.client_socket.recv(1024).decode('utf-8')
                 if message == 'services_statuses':
-                    status = model.get_servicesStatuses()
+                    services_statuses = model.get_servicesStatuses()
+                    self.__send(dumps(services_statuses))
 
         # Connection closed by server
         except ConnectionResetError:
