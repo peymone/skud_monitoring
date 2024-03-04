@@ -1,6 +1,5 @@
 from sys import argv
-
-from model import model
+from client import model
 
 
 class Console:
@@ -9,7 +8,6 @@ class Console:
         self.__commands = {
             'commands': "Show all available commands",
             'exit': "Close console",
-            'start': "Start client",
             'stop': "Stop client",
             'status': "Show current services status - for test",
         }
@@ -32,8 +30,7 @@ class Console:
                 # Execute command
                 match self.__command:
                     case 'commands': self.show_commands()
-                    case 'start': pass
-                    case 'stop': pass
+                    case 'stop': model.stop_client()
                     case 'status':
                         services_statuses = model.get_servicesStatuses()
                         print('\n')
@@ -51,11 +48,13 @@ class Console:
 
 if __name__ == '__main__':
     client_console = Console()
-    print("\nAvailable commands:")
-    client_console.show_commands()
-    client_console.commands_handler()
 
     if len(argv) > 1:
         server_host, server_port = argv[1], int(argv[2])
     else:
         server_host, server_port = '10.40.21.3', 9186
+
+    model.start_client(server_host, server_port)
+    print("\nAvailable commands:")
+    client_console.show_commands()
+    client_console.commands_handler()
