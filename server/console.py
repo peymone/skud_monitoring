@@ -2,7 +2,7 @@ from threading import Thread
 from sys import argv
 
 # Import application modules
-from monitor import monitor
+from server import monitor
 from pretifier import rich
 from logger import logger
 
