@@ -39,7 +39,7 @@ class Server:
             # Accept clients and start receiving messages
             while self.status is True:
                 client_socket, client_address = self.__socket.accept()
-                client_thread = Thread(target=self.__recieve_messages, args=(
+                client_thread = Thread(target=self.__receive_messages, args=(
                     client_socket, client_address), daemon=True)
                 client_thread.start()
 
@@ -89,7 +89,7 @@ class Server:
 
         print('\n')
 
-    def __recieve_messages(self, client_socket, client_address) -> None:
+    def __receive_messages(self, client_socket, client_address) -> None:
         """Receiving messages from specific client"""
 
         # Type hints for services statuses
