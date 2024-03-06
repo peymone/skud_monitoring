@@ -11,19 +11,23 @@ from logger import logger
 
 
 class Server:
-    def __init__(self, port) -> None:
+    """Create socket and start communicate with clients"""
+
+    def __init__(self) -> None:
+        self.status = False
         self.__host = socket.gethostbyname(socket.gethostname())
-        self.__port = port
-        self.__server_status = False
-        self.__server_clients = dict()
+        self.__port = None
+        self.__clients: dict[str, list] = dict()
 
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind((self.__host, self.__port))
+    def start(self, port: int) -> None:
+        """Start server"""
 
-    def start(self):
-        try:
-            self.server_socket.listen()
-            self.__server_status = True
+        try:  # Create socket and start receiving messages from clients
+            self.__port = port
+            self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.__socket.bind((self.__host, self.__port))
+            self.__socket.listen()  # Set socket to listen mod
+            self.status = True
 
             print('\n')
             rich.show(
@@ -32,100 +36,189 @@ class Server:
                 f"Server is running on {self.__host}:{self.__port}. Waiting for connections")
             print('\n')
 
-            while self.__server_status is True:
-                client_socket, client_address = self.server_socket.accept()
-                client_thread = Thread(target=self.__recieve_messages_fromClient, args=(
+            # Accept clients and start receiving messages
+            while self.status is True:
+                client_socket, client_address = self.__socket.accept()
+                client_thread = Thread(target=self.__recieve_messages, args=(
                     client_socket, client_address), daemon=True)
                 client_thread.start()
 
         except OSError:
             pass
 
-    def stop(self):
-        if self.__server_status is False:
-            pass
+    def stop(self) -> None:
+        """Close server socket and break connections"""
+
+        print('\n')
+
+        if self.status is False:
+            rich.show("Server is not working at the moment", lvl='warning')
         else:
-            pass
+            self.__socket.close()
+            self.status = False
 
-    def __recieve_messages_fromClient(self, cleint_socket, client_address):
-        try:
-            client_host = cleint_socket.recv(1024).decode('utf-8')
-            self.__server_clients[client_host] = (
-                cleint_socket, client_address)
+            rich.show("Server has been stopped by admin")
+            logger.log.debug("Server has been stopped by admin")
+
+        print('\n')
+
+    def show_status(self) -> None:
+        """Show current server status"""
+
+        print('\n')
+
+        if self.status is False:
+            rich.show("Server is not working")
+        else:
+            rich.show("Server is working")
+
+        print('\n')
+
+    def show_clients(self) -> None:
+        """Show current connected clients to the server"""
+
+        print('\n')
+
+        if self.status is False:
+            rich.show("Server is not working at the moment", lvl='warning')
+        elif len(self.__clients) == 0:
+            rich.show("Server have no connected clients at the moments")
+        else:  # Show client host name and address
+            for client_hostName, client_data in self.__clients.items():
+                rich.show(f"{client_hostName.ljust(45)}{client_data[1]}")
+
+        print('\n')
+
+    def __recieve_messages(self, client_socket, client_address) -> None:
+        """Receiving messages from specific client"""
+
+        # Type hints for services statuses
+        services_statuses = tuple[dict[str, tuple[str]],
+                                  dict[str, tuple[str] | str]]
+
+        try:  # Receiving messages from client
+
+            # Receive first message from client and fill clients dict
+            client_hostName: str = client_socket.recv(1024).decode('utf-8')
+            self.__clients[client_hostName] = [
+                client_socket, client_address, None]
+
             logger.log.debug(
-                f"{client_address} esablished connection with name {client_host}")
+                f"{client_address} established connection with name {client_hostName}")
 
-            while client_host is self.__server_clients.keys():
-                message = cleint_socket.recv(1024).decode('utf-8')
-                match message:
+            # Receiving messages from client until client socket closed
+            while client_hostName in self.__clients.keys():
+                message: str = client_socket.recv(1024).decode('utf-8')
+
+                match message:  # Handle commands from client
                     case 'services_statuses':
-                        services_statuses_json = cleint_socket.recv(
-                            1024).decode('utf-8')
-                        services_statuses = load(services_statuses_json)
+                        # Receive services statuses and add to clients dictionary
+                        services_statuses = load(
+                            client_socket.recv(1024).decode('utf-8'))
 
-                        lyrixServices_statusMsg = [
-                            status[0] for status in services_statuses[0].values()]
-                        ostelServices_statusMsg = [
-                            status[0] for status in services_statuses[1].values()]
+                        self.__clients[client_hostName][-1] = services_statuses
 
-                        if ('Down' in lyrixServices_statusMsg) or ('pid not found' in lyrixServices_statusMsg):
-                            rich.show(
-                                f"Lyrix services status on {client_host}:", lvl='warning')
-                            logger.log.warning(
-                                f"Lyrix services status on {client_host}:")
-                            print('\n')
+                    case _: pass  # Add command if needed
 
-                            for service_name, status in services_statuses[0].items():
-                                if status[0] == 'Down':
-                                    rich.show(
-                                        f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}", lvl='error')
-                                    logger.log.error(
-                                        f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}")
-                                elif status[0] == 'pid not found':
-                                    rich.show(
-                                        f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}", lvl='warning')
-                                    logger.log.warning(
-                                        f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}")
-                        else:
-                            rich.show(
-                                f"{client_host.ljust(45)}All lyrix services is up", lvl='info')
-                            logger.log.info(
-                                f"{client_host.ljust(45)}All lyrix services is up")
-                            print('\n')
-
-                        if ('Down' in ostelServices_statusMsg) or ('Warning' in ostelServices_statusMsg):
-                            rich.show(
-                                f"Lyrix services status on {client_host}:", lvl='warning')
-                            logger.log.warning(
-                                f"Lyrix services status on {client_host}:")
-                            print('\n')
-
-                            for service_name, status in services_statuses[1].items():
-                                if status[0] == 'Down':
-                                    rich.show(
-                                        f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}", lvl='critical')
-                                    logger.log.critical(
-                                        f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}")
-                                elif status[0] == 'Warning':
-                                    rich.show(
-                                        f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}", lvl='warning')
-                                    logger.log.warning(
-                                        f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}")
-                        else:
-                            rich.show(
-                                f"{client_host.ljust(45)}All ostel services is up", lvl='info')
-                            logger.log.info(
-                                f"{client_host.ljust(45)}All ostel services is up")
-                            print('\n')
-
-        except ConnectionResetError:
+        except ConnectionResetError:  # Connection closed by client
             logger.log.debug(
-                f"{client_address} with name {client_host} disconnected")
+                f"{client_address} with name {client_hostName} disconnected")
 
-            del self.__server_clients[client_host]
+            del self.__clients[client_hostName]
 
-        except ConnectionAbortedError:
+        except ConnectionAbortedError:  # Connection closed by server
             pass
+
+    def get_servicesStatuses(self) -> None:
+        """Send command to all connected clients for get services statuses"""
+
+        if self.status is False:  # Pass if server is not working
+            pass
+        else:  # Iterate over all connected clients, send command
+            for client_hostName, client_data in self.__clients.items():
+                client_data[0].send('services_statuses'.encode('utf-8'))
+
+        slice(10)  # Need time for receiving statuses from clients
+        servicesStatuses_received = all(
+            [statuses[-1] for statuses in self.__clients.values()])
+
+        # Check if all services statuses is received
+        while servicesStatuses_received is not True:
+            slice(5)  # Need more time for receiving statuses
+            servicesStatuses_received = all(
+                [statuses[-1] for statuses in self.__clients.values()])
+
+        self.__show_servicesStatuses()  # Show services statuses if all received
+
+    def __show_servicesStatuses(self) -> None:
+        """Show services statuses if all received"""
+
+        # Iterate over all connected clients, print statuses
+        for client_hostName, client_data in self.__clients.items():
+
+            lyrixServices_statusMsg = [status[-1][0] for status in client_data]
+            ostelServices_statusMsg = [status[-1][1] for status in client_data]
+
+            # Print Lyrix services statuses
+            if 'Down' in lyrixServices_statusMsg or 'pid not found' in lyrixServices_statusMsg:
+                rich.show(
+                    f"Lyrix services on {client_hostName} have some problems:", lvl='warning')
+                logger.log.warning(
+                    f"Lyrix services on {client_hostName} have some problems:")
+                print('\n')
+
+                for service_name, status in client_data[-1][0].items():
+                    if status[0] == 'Down':
+                        rich.show(
+                            f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}", lvl='error')
+                        logger.log.error(
+                            f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}")
+
+                    elif status[0] == 'pid not found':
+                        rich.show(
+                            f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}", lvl='warning')
+                        logger.log.warning(
+                            f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}")
+
+            else:  # All Lyrix services is Up
+                rich.show(
+                    f"All Lyrix services on {client_hostName} is Up", lvl='info')
+                logger.log.info(
+                    f"All Lyrix services on {client_hostName} is Up")
+
+            print('\n')
+
+            # Print Ostel services statuses
+            if 'Down' in ostelServices_statusMsg or 'Warning' in ostelServices_statusMsg:
+                rich.show(
+                    f"Ostel services on {client_hostName} have some problems:", lvl='critical')
+                logger.log.critical(
+                    f"Ostel services on {client_hostName} have some problems:")
+                print('\n')
+
+                for service_name, status in client_data[-1][1].items():
+                    if status[0] == 'Down':
+                        rich.show(
+                            f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}", lvl='critical')
+                        logger.log.critical(
+                            f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}")
+
+                    elif status[0] == 'Warning':
+                        rich.show(
+                            f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}", lvl='warning')
+                        logger.log.warning(
+                            f"{service_name.ljust(45)}{status[0].ljust(40)}last log was {status[1]}")
+
+            else:  # All Ostel services is Up
+                rich.show(
+                    f"All Ostel services on {client_hostName} is Up", lvl='info')
+                logger.log.info(
+                    f"All Ostel services on {client_hostName} is Up")
+
+            print('\n')
+
+            # Reset recived services statuses flag
+            self.__clients[client_hostName][-1] = None
 
 
 class Monitor:
@@ -135,6 +228,7 @@ class Monitor:
         self.__isActive = None
         self.__delay = None
         self.__event = Event()
+        self.__server = Server()
 
     def start(self, delay: int = 15) -> None:
         """Get dada from checkers every n minutes"""
@@ -176,7 +270,7 @@ class Monitor:
                 print('\n')
                 rich.show("Servers status:\n")
 
-                # Print results from servers_checker
+                # Print current servers statuses
                 for server, status in servers_status.items():
 
                     if status[0] == 'down':  # Check if one of servers is down
@@ -196,7 +290,7 @@ class Monitor:
                 print('\n')
                 rich.show("API's status:\n")
 
-                # Pring results from api_checker
+                # Print current API's statuses
                 for api, status in api_status.items():
 
                     if status[0] == 'down':  # Check if one of API's is down
@@ -209,6 +303,9 @@ class Monitor:
                             f"{api.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='info')
                         logger.log.info(
                             f"{api} is up - http status check ({status[1]})")
+
+                # Print current services statuses from SKUD servers
+                self.__server.get_servicesStatuses()
 
                 # Show progress bar and wait for delay passing
                 progressBar_thread = Thread(
@@ -281,15 +378,32 @@ class Monitor:
 
         print('\n')
 
-    def start_server(self, port):
-        self.__server = Server(port)
-        self.__server.start()
+    def start_server(self, port: int) -> None:
+        """Start server on specific port or 9186"""
 
-    def server_status(self):
-        pass
+        if self.__server.status is False:
+            server_thread = Thread(
+                target=self.__server.start, args=(port,), daemon=True)
+            server_thread.start()
+        else:
+            print('\n')
+            rich.show("Server is already working", lvl='warning')
+            print('\n')
 
-    def server_clients(self):
-        pass
+    def stop_server(self) -> None:
+        """Stop server"""
+
+        self.__server.stop()
+
+    def server_status(self) -> None:
+        """Show current server status"""
+
+        self.__server.show_status()
+
+    def server_clients(self) -> None:
+        """Show current connected clients to the server"""
+
+        self.__server.show_clients()
 
 
 monitor = Monitor()
