@@ -8,86 +8,96 @@ from servicesChecker import services_checker
 
 
 class Client:
+    """Class for creating client socket and communicate with server"""
+
     def __init__(self) -> None:
-        self.__client_hostName = socket.gethostname()
-        self.__server_hostName = None
-        self.__server_portNumber = None
-        self.__client_status = False
+        self.status = False
+        self.__hostName = socket.gethostname()
 
     def start(self, server_hostName: str, server_portNumber: int) -> None:
+        """Create client socket and connect to the server"""
+
         self.__server_hostName = server_hostName
         self.__server_portNumber = server_portNumber
-        self.__client_status = True
+        self.status = True
 
-        while self.__client_status is True:
+        # Try to connect the server if client is working
+        while self.status is True:
             try:  # Try to connect the server until it response
-                self.client_socket: socket.socket = socket.socket(
+
+                # Create client socket
+                self.__clientSocket: socket.socket = socket.socket(
                     socket.AF_INET, socket.SOCK_STREAM)
-                self.client_socket.connect(
+
+                # Connect to the server
+                self.__clientSocket.connect(
                     (self.__server_hostName, self.__server_portNumber))
 
                 #  Send first message to the server - client host name
-                self.client_socket.send(self.__client_hostName.encode('utf-8'))
-                self.__client_status = True
+                self.__clientSocket.send(self.__hostName.encode('utf-8'))
 
                 print(
                     f"\nClient is running, connected to {server_hostName}:{server_portNumber}\n")
 
-                self.__recieve_messages_fromServer()
+                self.__receive_messages()
 
-            # Rise this if the server is not working at the moment. Try againg after 60 seconds
-            except ConnectionRefusedError:
+            except ConnectionRefusedError:  # Server is not working at the moment
                 print(
                     f"\nServer on {server_hostName}:{server_portNumber} is not working at the moment. Client will try reconnect after 60 seconds\n")
+
                 sleep(60)
 
-            # No server on server_hostName:server_portNumber
-            except TimeoutError:
+            except TimeoutError:  # There is no server on the specified ip and port
                 print(
                     f"\nServer on {server_hostName}:{server_portNumber} does not exist in this network. Client will try reconnect after 60 seconds\n")
+
                 sleep(60)
 
     def stop(self) -> None:
-        """Close connection by client"""
+        """Break connection with server by closing client socket"""
 
-        if self.__client_status is False:
+        if self.status is False:
             print("\nClient is not working at the moment\n")
         else:
-            self.client_socket.close()
-            self.__client_status = False
+            self.__clientSocket.close()
+            self.status = False
             print(
                 f"\nConnection to {self.__server_hostName}:{self.__server_portNumber} is closed by client\n")
 
     def __send(self, message: str) -> None:
-        """Send messages to the server"""
+        """Send message to the server"""
 
-        if self.__client_status is False:
+        if self.status is False:
             print("\nClient is not working at the moment\n")
         else:
             try:
-                self.client_socket.send(message.encode('utf-8'))
+                self.__clientSocket.send(message.encode('utf-8'))
             except BrokenPipeError:
                 print(
                     f"\nServer on {self.__server_hostName}:{self.__server_portNumber} is not working at the moment\n")
 
-    def __recieve_messages_fromServer(self) -> None:
+    def __receive_messages(self) -> None:
+        """Receiving messages from server"""
+
         try:
+            while self.status is True:
+                message: str = self.__clientSocket.recv(1024).decode('utf-8')
 
-            while self.__client_status is True:
-                message: str = self.client_socket.recv(1024).decode('utf-8')
-                if message == 'services_statuses':
-                    services_statuses = model.get_servicesStatuses()
-                    self.__send(dumps(services_statuses))
+                match message:
+                    case 'services_statuses':
+                        services_statuses = model.get_servicesStatuses()
+                        self.__send('services_statuses')
+                        self.__send(dumps(services_statuses))
 
-        # Connection closed by server
-        except ConnectionResetError:
-            self.client_socket.close()
-            self.__client_status = False
+                    case _: pass
+
+        except ConnectionResetError:  # Connection closed by server
+            self.__clientSocket.close()
+            self.status = False
             print(
                 f"\nConnection to {self.__server_hostName}:{self.__server_portNumber} is closed by server\n")
 
-        # Connection closed by client
-        except ConnectionAbortedError:
+        except ConnectionAbortedError:  # Connection closed by client
             pass
 
 
@@ -98,7 +108,7 @@ class Model:
         self.__client = Client()
 
     def get_servicesStatuses(self) -> tuple[dict[str, tuple[str]], dict[str, tuple[str]] | str]:
-        """Get data services statuses from Lyrix and ostel checkers"""
+        """Get services statuses from Lyrix and ostel checkers"""
 
         # Thread pool for parallel checkers execution
         with ThreadPoolExecutor(2) as pool:
@@ -114,11 +124,19 @@ class Model:
         return lyrixServices_status, ostelServices_status
 
     def start_client(self, server_hostName: str, server_portNumber: int) -> None:
-        client_thread = Thread(target=self.__client.start, args=(
-            server_hostName, server_portNumber), daemon=True)
-        client_thread.start()
+        """Start client with specific server host name and port number"""
+
+        if self.__client.start is False:
+            client_thread = Thread(target=self.__client.start, args=(
+                server_hostName, server_portNumber), daemon=True)
+
+            client_thread.start()
+        else:
+            print("\nClient is already working\n")
 
     def stop_client(self) -> None:
+        """Stop client, break connection to the server"""
+
         self.__client.stop()
 
 
