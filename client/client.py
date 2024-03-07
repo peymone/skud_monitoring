@@ -127,7 +127,7 @@ class Model:
     def start_client(self, server_hostName: str, server_portNumber: int) -> None:
         """Start client with specific server host name and port number"""
 
-        if self.__client.start is False:
+        if self.__client.status is False:
             client_thread = Thread(target=self.__client.start, args=(
                 server_hostName, server_portNumber), daemon=True)
 
