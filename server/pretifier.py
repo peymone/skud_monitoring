@@ -6,6 +6,8 @@ from rich.progress import track
 
 
 class Pretifier:
+    """Class for console styling"""
+
     def __init__(self) -> None:
         self.__custom_theme = Theme({
             'system': 'dim cyan',
@@ -21,6 +23,8 @@ class Pretifier:
         self.progressBar_status = None
 
     def progress_bar(self, delay: int) -> None:
+        """Show progress bar with specific delay"""
+
         self.progressBar_status = True
         print('\n')
 
@@ -30,13 +34,15 @@ class Pretifier:
             else:
                 break
 
-        self.isActive = False
-
     def show(self, message: str, lvl: str = 'debug') -> None:
-        now = strftime("%d.%m %A %H:%M", localtime())
-        self.__custom_console.print(f"{now}\t{message}", style=lvl)
+        """Print message with custom styling"""
+
+        time_now = strftime("%d.%m %A %H:%M", localtime())
+        self.__custom_console.print(f"{time_now}\t{message}", style=lvl)
 
     def enter(self, prompt: str, lvl: str = 'debug') -> str:
+        """Input user command with custom styling"""
+
         return self.__custom_console.input(f"[{lvl}]{prompt}")
 
 
