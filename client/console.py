@@ -1,6 +1,6 @@
 from sys import argv
 
-from client import model
+from model import model
 
 
 class Console:

@@ -12,35 +12,30 @@ class Client:
     """Class for creating client socket and communicate with server"""
 
     def __init__(self) -> None:
-        self.status = False
+        # Create client socket
+        self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         self.__hostName = socket.gethostname()
+        self.status = False
 
     def start(self, server_hostName: str, server_portNumber: int) -> None:
         """Create client socket and connect to the server"""
 
         self.__server_hostName = server_hostName
-        self.__server_portNumber = server_portNumber
+        self.__server_portNumber = server_hostName
+        self.__serverAddress = (server_hostName, server_portNumber)
         self.status = True
 
-        # Try to connect the server if client is working
         while self.status is True:
-            try:  # Try to connect the server until it response
-
-                # Create client socket
-                self.__clientSocket: socket.socket = socket.socket(
-                    socket.AF_INET, socket.SOCK_STREAM)
-
-                # Connect to the server
-                self.__clientSocket.connect(
-                    (self.__server_hostName, self.__server_portNumber))
-
-                #  Send first message to the server - client host name
-                self.__clientSocket.send(self.__hostName.encode('utf-8'))
+            try:
+                # Connect to the server and send first message
+                self.__socket.connect(self.__serverAddress)
+                self.__socket.send(self.__hostName.encode('utf-8'))
 
                 print(
-                    f"\nClient is running, connected to {server_hostName}:{server_portNumber}\n")
-
-                self.__receive_messages()
+                    f"\nClient is coneected to {server_hostName}:{server_portNumber}\n")
+                self.__receive_messages()  # Receiving messages loop
 
             except ConnectionRefusedError:  # Server is not working at the moment
                 print(
@@ -54,16 +49,19 @@ class Client:
 
                 sleep(60)
 
+            except OSError:  # Stop client before socket was created
+                break
+
     def stop(self) -> None:
         """Break connection with server by closing client socket"""
 
         if self.status is False:
             print("\nClient is not working at the moment\n")
         else:
-            self.__clientSocket.close()
+            self.__socket.close()
             self.status = False
             print(
-                f"\nConnection to {self.__server_hostName}:{self.__server_portNumber} is closed by client\n")
+                f"\nConnection to {self.__server_hostName}:{self.__server_portNumber} closed by client\n")
 
     def __send(self, message: str) -> None:
         """Send message to the server"""
@@ -72,7 +70,7 @@ class Client:
             print("\nClient is not working at the moment\n")
         else:
             try:
-                self.__clientSocket.send(message.encode('utf-8'))
+                self.__socket.send(message.encode('utf-8'))
             except BrokenPipeError:
                 print(
                     f"\nServer on {self.__server_hostName}:{self.__server_portNumber} is not working at the moment\n")
@@ -81,8 +79,8 @@ class Client:
         """Receiving messages from server"""
 
         try:
-            while self.status is True:
-                message: str = self.__clientSocket.recv(1024).decode('utf-8')
+            while self.status:
+                message: str = self.__socket.recv(1024).decode('utf-8')
 
                 match message:
                     case 'services_statuses':
@@ -93,10 +91,10 @@ class Client:
                     case _: pass
 
         except ConnectionResetError:  # Connection closed by server
-            self.__clientSocket.close()
+            self.__socket.close()
             self.status = False
             print(
-                f"\nConnection to {self.__server_hostName}:{self.__server_portNumber} is closed by server\n")
+                f"\nConnection to {self.__server_hostName}:{self.__server_portNumber} closed by server\n")
 
         except ConnectionAbortedError:  # Connection closed by client
             pass
