@@ -24,22 +24,19 @@ class APIChecker:
         for api_url, desc in self.__api.items():
             try:
                 start_time = time()
+
                 # send http request and get response
                 with urlopen(api_url) as response:
 
-                    # check open time
-                    end_time = time()
+                    end_time = time()  # check open time
                     open_time = f"{(end_time - start_time):0.3f}"
 
                     # Fill dictionary with result tuple
                     if response.status == 200:
-                        self.__api_status[desc] = 'up', f"response time is {
-                            open_time} sec"
+                        self.__api_status[desc] = 'up', f"response time is {open_time} sec"
                     else:
-                        self.__api_status[desc] = 'down', f"response time is {
-                            open_time} sec"
+                        self.__api_status[desc] = 'down', f"response time is {open_time} sec"
 
-            # Error handlers
             except HTTPError as error:
                 self.__api_status[desc] = 'down', error.reason
             except URLError as error:
