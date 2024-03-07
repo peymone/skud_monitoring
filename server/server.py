@@ -6,7 +6,7 @@ import socket
 # Import application modules
 from servers_check.checker import servers_checker
 from api_check.checker import api_checker
-from pretifier import rich
+from pretifier import rich, sleep
 from logger import logger
 
 
@@ -54,10 +54,11 @@ class Server:
         if self.status is False:
             rich.show("Server is not working at the moment", lvl='warning')
         else:
+            self.__clients = dict()
             self.__socket.close()
             self.status = False
 
-            rich.show("Server has been stopped by admin")
+            rich.show("Server has been stopped")
             logger.log.debug("Server has been stopped by admin")
 
         print('\n')
@@ -132,19 +133,20 @@ class Server:
     def get_servicesStatuses(self) -> None:
         """Send command to all connected clients for get services statuses"""
 
-        if self.status is False:  # Pass if server is not working
+        # Pass if server is not working or have no connected clients
+        if self.status is False or len(self.__clients) == 0:
             pass
         else:  # Iterate over all connected clients, send command
             for client_hostName, client_data in self.__clients.items():
                 client_data[0].send('services_statuses'.encode('utf-8'))
 
-        slice(10)  # Need time for receiving statuses from clients
+        sleep(10)  # Need time for receiving statuses from clients
         servicesStatuses_received = all(
             [statuses[-1] for statuses in self.__clients.values()])
 
         # Check if all services statuses is received
         while servicesStatuses_received is not True:
-            slice(5)  # Need more time for receiving statuses
+            sleep(5)  # Need more time for receiving statuses
             servicesStatuses_received = all(
                 [statuses[-1] for statuses in self.__clients.values()])
 
@@ -273,15 +275,17 @@ class Monitor:
                 # Print current servers statuses
                 for server, status in servers_status.items():
 
-                    if status[0] == 'down':  # Check if one of servers is down
+                    if status[0] == 'down':  # Check if one of the servers is down
                         rich.show(
                             f"{server.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='error')
                         logger.log.error(f"{server} is down - ping check")
+
                     elif 'up (package loss' in status[0]:  # Loss 1 - 99%
                         rich.show(
                             f"{server.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='warning')
                         logger.log.warning(
                             f"{server} is {status[0]} - ping check")
+
                     else:
                         rich.show(
                             f"{server.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='info')
@@ -298,6 +302,7 @@ class Monitor:
                             f"{api.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='critical')
                         logger.log.critical(
                             f"{api} is down - http status check ({status[1]})")
+
                     else:
                         rich.show(
                             f"{api.ljust(45)}{status[0].ljust(40)}{status[1]}", lvl='info')
@@ -313,14 +318,13 @@ class Monitor:
 
                 logger.log.debug("Progress bar thread has been started")
                 progressBar_thread.start()  # Start progress bar thread
+                logger.log.debug("Progress bar thread has been ended")
 
                 # Wait for delay pass or event - loop can stop immediately
                 self.__event.wait(self.__delay)
 
                 progressBar_thread.join()  # Wait until progress bar end
                 self.__event.clear()  # Set the event to False
-
-            logger.log.debug("System monitoring has been stopped")
 
     def stop(self) -> None:
         """Stop system monitoring"""
@@ -331,7 +335,7 @@ class Monitor:
             self.__isActive = False
             self.__event.set()  # Set event to True - start loop can stop immediately
             rich.show("System monitoring has been stopped")
-            logger.log.debug("System monitoring has been stopped")
+            logger.log.debug("System monitoring has been stopped by admin")
         else:
             rich.show("Monitor is not working at the moment", lvl='warning')
 
