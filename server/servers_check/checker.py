@@ -1,5 +1,5 @@
-from os import popen  # use for run cmd command
-import re  # use for check package loss
+from os import popen
+import re
 
 
 class ServersChecker:
@@ -28,19 +28,20 @@ class ServersChecker:
             ping_loss = self.pingLoss_pattern.search(ping_res)
 
             if ping_loss is not None:  # Match object in ping result
-                # Convert match object to integer
+
+                # Convert match result to integer
                 loss_count = int(ping_loss.group().split()[0][1:-1])
 
                 if loss_count == 0:  # 0% package loss
                     self.__ping_result[server] = 'up', description
+
                 elif loss_count == 100:  # 100% package loss
                     self.__ping_result[server] = 'down', description
-                else:  # 1 - 99% package loss
-                    self.__ping_result[server] = f'up (package loss {
-                        loss_count}%)', description
 
-            # No match object in ping result - None
-            else:
+                else:  # 1 - 99% package loss
+                    self.__ping_result[server] = f'up (package loss {loss_count}%)', description
+
+            else:  # No match object in ping result - None
                 self.__ping_result[server] = 'down', description
 
         return self.__ping_result
